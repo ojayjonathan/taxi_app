@@ -1,0 +1,14 @@
+{% extends 'admin/base_site.html' %}
+{% load static %}
+{% block title %} Mat'ndogo admin {% endblock%}
+{% block branding %}
+<h1 id="head">
+   <div id="brand">
+      Mat'ndogo
+   </div>
+</h1>
+{% endblock %}
+
+{% block extrastyle %}
+<link rel="stylesheet" href="{% static  'dashboard.css' %}">
+{% endblock %}
