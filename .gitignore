@@ -1,3 +1,3 @@
 venv/
-./db.sqlite
-./matndogo/matndogo/config.py
+/matndogo/db.sqlite
+/matndogo/matndogo/config.py
