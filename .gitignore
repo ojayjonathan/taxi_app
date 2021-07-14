@@ -1,4 +1,5 @@
 venv/
 matndogo/db.sqlite3
 **/matndogo/config.py
-matndogo/
+__pycache__/
+images/
