@@ -199,3 +199,8 @@ class PasswordResetToken(models.Model):
     short_token = models.IntegerField(null=True)
     reset_token = models.CharField(max_length=100)
 
+
+class Feedback(models.Model):
+    message = models.TextField()
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    

@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import (CustomerProfileView,customer_suport, RegisterCustomer, ChangePasswordView,
+from .views import (CustomerProfileView,customer_suport, RegisterCustomer, ChangePasswordView,Feedback,
                     RouteView, TripView, UserAddressView,  CustomerBookingView, UserLogin, ForgotPasswordView)
 from rest_framework.documentation import include_docs_urls
 from .driver_views import DriverProfileView, DriverTrip
@@ -21,6 +21,7 @@ urlpatterns = [
     path('driver/profile/', DriverProfileView.as_view()),
     path('driver/trip/', DriverTrip.as_view()),
     path('support/', customer_suport),
-    path('docs/', include_docs_urls(title=API_TITLE, description=API_DESCRIPTION))
+    path('docs/', include_docs_urls(title=API_TITLE, description=API_DESCRIPTION)),
+    path('feedback/', Feedback.as_view()),
 
 ]

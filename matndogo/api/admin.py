@@ -58,4 +58,5 @@ admin.site.register(CustomerBooking, CustomerBookingAdmin)
 admin.site.register(Street)
 admin.site.register(Address, AddressAdmin)
 admin.site.register(UserAddress, UserAddressAdmin)
+admin.site.register(Feedback)
 # Register your models here.

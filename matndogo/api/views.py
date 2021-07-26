@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.encoding import force_bytes, force_text
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from .models import (Customer, User, Route, Trip,
+from .models import (Customer, User, Route, Trip, Feedback,
                      CustomerBooking, UserAddress, Address, City, Street, PasswordResetToken)
 from django.shortcuts import get_object_or_404
 from rest_framework.authtoken.models import Token
@@ -15,6 +15,8 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import authenticate
 from threading import Thread
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from .validators import phone_number_validator
 '''
 contains documentation schema
@@ -39,6 +41,7 @@ class EmailThead(Thread):
                   fail_silently=True, html_message=self.message)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class UserLogin(APIView):
     """
     login user
@@ -47,6 +50,7 @@ class UserLogin(APIView):
 
     def post(self, request):
         form = UserLoginForm(request.data)
+        print("json", request.data)
         if form.is_valid():
             user = authenticate(email=form.cleaned_data["email"],
                                 password=form.cleaned_data["password"])
@@ -60,6 +64,7 @@ class UserLogin(APIView):
         return Response(form.errors, status=400)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class CustomerProfileView(APIView):
     '''
     customer view
@@ -72,11 +77,13 @@ class CustomerProfileView(APIView):
         '''
         Returns customer profile
         '''
+        print(request.headers)
         customer_profile = get_object_or_404(Customer, user=request.user)
         response = CutomerProfileSerializer(customer_profile).data
         return Response(data=response, status=200)
 
     def put(self, request):
+        "update profile - email, phone number"
         form = UserProfileUpdateForm(request.data)
         if form.is_valid():
             user = request.user
@@ -86,15 +93,25 @@ class CustomerProfileView(APIView):
                 user.save()
             if form.cleaned_data.get("phone_number"):
                 customer_profile.phone_number = form.cleaned_data['phone_number']
-            if form.cleaned_data.get("profile_image"):
-                customer_profile.profile_image = form.cleaned_data["profile_image"]
             customer_profile.save()
             return Response(CutomerProfileSerializer(customer_profile).data,
                             status=200)
 
         return Response(form.errors, status=400)
 
+    def patch(self, request):
+        "update customer profile image"
+        if(request.FILES):
+            profile = Customer.objects.get(
+                user=request.user
+            )
+            profile.profile_image = request.FILES[0]
+            profile.save()
+            return Response({"message": "profile update was successful"}, status=200)
+        return Response({"message": "invalid image"}, status=400)
 
+
+@method_decorator(csrf_exempt, name='dispatch')
 class RegisterCustomer(APIView):
     '''
     register Customer
@@ -121,9 +138,11 @@ class RegisterCustomer(APIView):
             else:
                 form.add_error(
                     "phone_number", "Please provide a valid phone number eg +254734536941")
+        print(form.errors)
         return Response(form.errors, status=400)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class RouteView(APIView):
     '''
     Returns all routes which the cars operate
@@ -134,6 +153,7 @@ class RouteView(APIView):
         return Response(RouteSerializer(query, many=True).data)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class TripView(APIView):
     '''
     Returns all trips which are active and not full
@@ -145,6 +165,7 @@ class TripView(APIView):
         return Response(response)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class CustomerBookingView(APIView):
     '''
     customer car booking view
@@ -192,6 +213,7 @@ class CustomerBookingView(APIView):
         return Response(BookingSerializer(customer_booking).data)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class UserAddressView(APIView):
     '''
      user address view
@@ -242,6 +264,7 @@ class UserAddressView(APIView):
         return Response(AddressSerializer(address).data)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ChangePasswordView(APIView):
     """
     An endpoint for changing password.
@@ -268,14 +291,16 @@ class ChangePasswordView(APIView):
         return Response(serializer.errors, status=400)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ForgotPasswordView(APIView):
     schema = ResetPasswordSchema()
 
     def post(self, request):
         serializer = ResetPasswordSerializer(data=request.data)
         if serializer.is_valid():
+            email=serializer.data.get("email")
             user = User.objects.filter(
-                email=serializer.data.get("email")).first()
+                email=email).first()
             if not user:
                 return Response({"email": ["User not found"]}, status=400)
             '''
@@ -286,13 +311,17 @@ class ForgotPasswordView(APIView):
             '''
             token = password_reset_token.make_token(user)
             uid64 = urlsafe_base64_encode(force_bytes(user.pk))
-            obj, _ = PasswordResetToken.objects.get_or_create(user=user)
-            obj.short_token = self.gen_token()
-            obj.reset_token = token
-            obj.save()
+            try:
+                PasswordResetToken.objects.get(user=user).delete()
+            except:
+                pass    
+            obj = PasswordResetToken(user=user,
+            short_token = self.gen_token(),
+            reset_token = token)
             # send short_token to user email
-            print(obj.short_token)
-            return Response({"message": "please check code to your account to change password", "uid": uid64},
+            print(obj.short_token,obj.user.id,obj.short_token)
+          
+            return Response({"message": f"please check code to {email} to change your password", "uid": uid64},
                             status=200)
         return Response(serializer.errors, status=400)
 
@@ -306,14 +335,16 @@ class ForgotPasswordView(APIView):
     def put(self, request):
         serializer = NewPasswordSerializer(data=request.data)
         if serializer.is_valid():
-            short_code = request.data.get('short_code')
+            
             uidb64 = request.data.get("uid")
             try:
+                short_code =int(request.data.get('short_code'))
                 uid = int(force_bytes(urlsafe_base64_decode(uidb64)))
+                print(short_code,uid)
                 password_token = PasswordResetToken.objects.get(
                     user=uid, short_token=short_code)
             except(TypeError, ValueError, OverflowError, PasswordResetToken.DoesNotExist):
-                return Response({"message": "Token not found"}, status=400)
+                return Response({"message": "The cofirmation code is invalid or it has expired"}, status=400)
 
             if password_reset_token.check_token(password_token.user, password_token.reset_token):
                 user = get_object_or_404(User, id=uid)
@@ -326,6 +357,20 @@ class ForgotPasswordView(APIView):
         return Response(serializer.errors, status=400)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
+class Feedback(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if request.data.get("message"):
+            feedback = Feedback(user=request.user,
+                                message=request.data.get("message"))
+            feedback.save()
+        return Response({"message": "Thank you for your feed back"}, status=201)
+
+
+@csrf_exempt
 @api_view(["GET"])
 def customer_suport(request):
     return Response({"phone_numbers": SUPPORT_CONTACT})
