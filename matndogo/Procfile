@@ -1,1 +1,0 @@
-web: gunicorn matndogo.wsgi --log-file -

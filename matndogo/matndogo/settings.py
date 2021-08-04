@@ -11,16 +11,20 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
 from pathlib import Path
-import os
-from .config import EmailConf,secret_key
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+import os 
+from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+load_dotenv(BASE_DIR.parent/".env")
+load_dotenv(BASE_DIR.parent.parent/".env")
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = secret_key
+SECRET_KEY = os.getenv("secret_key")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -40,8 +44,6 @@ INSTALLED_APPS = [
     "api",
     "rest_framework.authtoken",
     'corsheaders',
-
-
 ]
 
 REST_FRAMEWORK = {
@@ -88,12 +90,26 @@ AUTH_USER_MODEL = "api.User"
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 
-   
-DATABASES = {
+
+if os.getenv("localhost"):   
+    DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }}
+else:
+    DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'OPTIONS':{'read_default_file':'/etc/mysql/my.cnf',
+            },
+        'NAME':os.getenv("DATABASE"),
+        'USER':os.getenv("USER"),
+        'PASSWORD':os.getenv("PASSWORD"),
+        'HOST':'localhost',
+        'PORT':''
+    }
+   }    
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
@@ -127,11 +143,11 @@ USE_L10N = True
 
 USE_TZ = True
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = EmailConf.EMAIL_HOST
+EMAIL_HOST = os.getenv("EMAIL_HOST")
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
-EMAIL_HOST_USER = EmailConf.EMAIL_HOST_USER
-EMAIL_HOST_PASSWORD = EmailConf.EMAIL_HOST_PASSWORD
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
