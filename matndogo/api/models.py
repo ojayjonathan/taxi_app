@@ -1,3 +1,9 @@
+
+from threading import Thread
+from django.conf import settings
+
+from django.core.mail import send_mail
+from .app_notifications import android_message, send_multicast
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from .managers import UserManager
@@ -9,6 +15,17 @@ from django.dispatch import receiver
 
 def upload(instance, filename):
     return f"images/{instance.user.id}/{filename}"
+
+
+class EmailThead(Thread):
+    def __init__(self, email_to,  message):
+        super().__init__()
+        self.email_to = email_to
+        self.message = message
+
+    def run(self):
+        send_mail("subject",  self.message, settings.EMAIL_HOST_USER, self.email_to,
+                  fail_silently=True, html_message=self.message)
 
 
 class User(AbstractUser):
@@ -35,7 +52,7 @@ def create_auth_token(sender=None, instance=None, created=False, **kwargs):
 
 class Customer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    profile_image = models.FileField(null=True, blank=True, upload_to=upload)
+    profile_image = models.ImageField(null=True, blank=True, upload_to=upload)
     phone_number = models.CharField(max_length=13)
 
     def __str__(self) -> str:
@@ -44,7 +61,7 @@ class Customer(models.Model):
 
 class Driver(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    profile_image = models.FileField(null=True, blank=True, upload_to=upload)
+    profile_image = models.ImageField(null=True, blank=True, upload_to=upload)
     phone_number = models.CharField(max_length=13)
     gender = models.CharField(max_length=1, choices=(
         ("M", "Male"), ("F", "Female")
@@ -72,7 +89,7 @@ class Street(models.Model):
 
 class Route(models.Model):
     origin = models.ForeignKey(
-        City, on_delete=models.CASCADE, related_name="from+")
+        City, on_delete=models.CASCADE, related_name="travel_origin")
     destination = models.ForeignKey(
         City, on_delete=models.CASCADE, related_name="to")
     cost = models.IntegerField()
@@ -142,8 +159,8 @@ class CustomerBooking(models.Model):
     seats = models.IntegerField(default=0)
     booked_on = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=1, choices=(
-        ("C", "canceled"), ("P", "pending"), ("F", "fulfiled")
-    ), default="P")
+        ("C", "canceled"), ("A", "active"), ("F", "fulfiled")
+    ), default="A")
     '''
     __initial_booked_seats keep track if the user has changed the number of booked seats
     '''
@@ -188,6 +205,23 @@ class CustomerBooking(models.Model):
         self.cost = self.seats*self.trip.route.cost
         return super().save(*args, **kwargs)
 
+# send notification when the trip is full
+
+
+@receiver(post_save, sender=CustomerBooking)
+def send_user_notification(sender=None, instance=None, created=False, **kwargs):
+    if instance.status == "A" and instance.trip.available_seats == 0:
+        trip_users = CustomerBooking.objects.filter(
+            trip=instance.trip, status="A")
+        tokens = [token.fcm_token for token in Fcm.objects.filter(
+            user__in=[item.customer.user.id for item in trip_users])]
+        # push notification
+        message = "The trip you booked is full, you will receive a confirmation call."
+        send_multicast(tokens, "Booking status update",
+                       message)
+        # email notication
+        EmailThead([item.customer.email for item in trip_users], message)
+
 
 class DriverEarning(models.Model):
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE)
@@ -203,4 +237,9 @@ class PasswordResetToken(models.Model):
 class Feedback(models.Model):
     message = models.TextField()
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    
+    time = models.DateTimeField(auto_created=True)
+
+
+class Fcm(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True)
+    fcm_token = models.CharField(max_length=100)

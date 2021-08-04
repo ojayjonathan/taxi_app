@@ -24,14 +24,13 @@ SECRET_KEY = secret_key
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.43.60', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = [ '147.182.225.253',"192.168.43.60","localhost"]
 
 
 # Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
-
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -40,7 +39,7 @@ INSTALLED_APPS = [
     'rest_framework',
     "api",
     "rest_framework.authtoken",
-     'corsheaders',
+    'corsheaders',
 
 
 ]
@@ -54,7 +53,6 @@ REST_FRAMEWORK = {
 }
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
-     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -89,13 +87,13 @@ AUTH_USER_MODEL = "api.User"
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
+
+   
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-
+    }}
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
@@ -138,9 +136,14 @@ EMAIL_HOST_PASSWORD = EmailConf.EMAIL_HOST_PASSWORD
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
-STATIC_URL = '/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+STATIC_ROOT = BASE_DIR / 'static'
+
+# The URL to use when referring to static files (where they will be served from)
+STATIC_URL = '/static/'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR/'media'

@@ -1,3 +1,4 @@
+from .app_notifications import android_message
 from .data import *
 from rest_framework.decorators import api_view
 import random
@@ -5,11 +6,11 @@ from .forms import *
 from .serializers import *
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.utils.encoding import force_bytes, force_text
+from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from .models import (Customer, User, Route, Trip, Feedback,
+from .models import (Customer, User, Route, Trip, Feedback, Fcm,
                      CustomerBooking, UserAddress, Address, City, Street, PasswordResetToken)
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
@@ -18,6 +19,8 @@ from threading import Thread
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from .validators import phone_number_validator
+
+
 '''
 contains documentation schema
 '''
@@ -36,8 +39,7 @@ class EmailThead(Thread):
         self.message = message
 
     def run(self):
-        recipient_list = [self.email_to, ]
-        send_mail("subject", self.message, settings.EMAIL_HOST_USER, recipient_list,
+        send_mail("subject",  self.message,settings.EMAIL_HOST_USER, self.email_to,
                   fail_silently=True, html_message=self.message)
 
 
@@ -50,7 +52,6 @@ class UserLogin(APIView):
 
     def post(self, request):
         form = UserLoginForm(request.data)
-        print("json", request.data)
         if form.is_valid():
             user = authenticate(email=form.cleaned_data["email"],
                                 password=form.cleaned_data["password"])
@@ -77,7 +78,7 @@ class CustomerProfileView(APIView):
         '''
         Returns customer profile
         '''
-        print(request.headers)
+       
         customer_profile = get_object_or_404(Customer, user=request.user)
         response = CutomerProfileSerializer(customer_profile).data
         return Response(data=response, status=200)
@@ -127,13 +128,24 @@ class RegisterCustomer(APIView):
                 customer = Customer(user=user, phone_number=phone_number)
                 customer.save()
                 data = UserSerializer(user).data
+                # create auth token
                 token = Token.objects.get(user=user).key
+                # add fcm  device token- for firebase messaging
+                if request.data.get("registration_id"):
+                    fcm_obj = Fcm(
+                        user=user, fcm_token=request.data.get("registration_id"))
+                    fcm_obj.save()
+                    # send push notification
+                    android_message(fcm_obj.fcm_token, "Registration",
+                                              "Thank you for registering with matndogo")
+                   
                 data["token"] = token
                 data["phone_number"] = phone_number
                 email_to = form.cleaned_data.get("email")
                 password = form.cleaned_data["password"]
-                message = f"{email_to} <br> {password}"
-                EmailThead(email_to, message).start()
+                message = render_to_string("registration_email.html",{"password":password,"email":email_to})
+                
+                EmailThead([email_to], message).start()
                 return Response(data, status=200)
             else:
                 form.add_error(
@@ -161,6 +173,9 @@ class TripView(APIView):
 
     def get(self, request):
         query = Trip.objects.filter(status="A", available_seats__gt=0)
+        q = request.GET.get("q")
+        if(q):
+            query = query.filter(route__origin__name__contains=q)
         response = TripSerializer(query, many=True).data
         return Response(response)
 
@@ -195,8 +210,10 @@ class CustomerBookingView(APIView):
             booking, _ = CustomerBooking.objects.get_or_create(
                 customer=customer,
                 trip=trip,
+
             )
             booking.seats = num_seats
+            booking.status = "A"
             booking.save()
             data = BookingSerializer(booking).data
             return Response(data, status=200)
@@ -298,7 +315,7 @@ class ForgotPasswordView(APIView):
     def post(self, request):
         serializer = ResetPasswordSerializer(data=request.data)
         if serializer.is_valid():
-            email=serializer.data.get("email")
+            email = serializer.data.get("email")
             user = User.objects.filter(
                 email=email).first()
             if not user:
@@ -314,13 +331,14 @@ class ForgotPasswordView(APIView):
             try:
                 PasswordResetToken.objects.get(user=user).delete()
             except:
-                pass    
+                pass
             obj = PasswordResetToken(user=user,
-            short_token = self.gen_token(),
-            reset_token = token)
+                                     short_token=self.gen_token(),
+                                     reset_token=token)
+            obj.save()
             # send short_token to user email
-            print(obj.short_token,obj.user.id,obj.short_token)
           
+
             return Response({"message": f"please check code to {email} to change your password", "uid": uid64},
                             status=200)
         return Response(serializer.errors, status=400)
@@ -335,12 +353,11 @@ class ForgotPasswordView(APIView):
     def put(self, request):
         serializer = NewPasswordSerializer(data=request.data)
         if serializer.is_valid():
-            
+
             uidb64 = request.data.get("uid")
             try:
-                short_code =int(request.data.get('short_code'))
+                short_code = int(request.data.get('short_code'))
                 uid = int(force_bytes(urlsafe_base64_decode(uidb64)))
-                print(short_code,uid)
                 password_token = PasswordResetToken.objects.get(
                     user=uid, short_token=short_code)
             except(TypeError, ValueError, OverflowError, PasswordResetToken.DoesNotExist):
@@ -361,7 +378,6 @@ class ForgotPasswordView(APIView):
 class Feedback(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
-
     def post(self, request):
         if request.data.get("message"):
             feedback = Feedback(user=request.user,
@@ -370,7 +386,6 @@ class Feedback(APIView):
         return Response({"message": "Thank you for your feed back"}, status=201)
 
 
-@csrf_exempt
 @api_view(["GET"])
 def customer_suport(request):
     return Response({"phone_numbers": SUPPORT_CONTACT})

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import (Customer, Driver, CustomerBooking, Street,
-                     Route, User, Trip, City, Address, UserAddress)
+                     Route, User, Trip, City, Address, UserAddress,Vehicle)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -47,32 +47,6 @@ class RouteSerializer(serializers.ModelSerializer):
         fields = ["origin", "destination", "cost"]
 
 
-class TripSerializer(serializers.ModelSerializer):
-    route = RouteSerializer()
-
-    class Meta:
-        model = Trip
-        fields = ["id", "route", "arrival",
-                  "departure", "status", "available_seats"]
-
-
-class CutomerProfileSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
-
-    class Meta:
-        model = Customer
-        fields = ["user", "profile_image", "phone_number"]
-
-
-class BookingSerializer(serializers.ModelSerializer):
-    trip = TripSerializer()
-    customer = CutomerProfileSerializer()
-
-    class Meta:
-        model = CustomerBooking
-        fields = "__all__"
-
-
 class DriverSerializer(serializers.ModelSerializer):
     user = UserSerializer()
 
@@ -101,3 +75,35 @@ class NewPasswordSerializer(serializers.Serializer):
     uid = serializers.CharField()
     new_password = serializers.CharField()
     short_code = serializers.IntegerField()
+
+class VehicleSerializer(serializers.ModelSerializer):
+     class Meta:
+        model = Vehicle
+        fields = ["vehicle_registration_number","color","seats"]
+
+
+class TripSerializer(serializers.ModelSerializer):
+    route = RouteSerializer()
+    driver = DriverSerializer()
+    vehicle = VehicleSerializer()
+    class Meta:
+        model = Trip
+        fields = ["id", "route", "arrival",
+                  "departure", "status", "available_seats","driver","vehicle"]
+
+
+class CutomerProfileSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+
+    class Meta:
+        model = Customer
+        fields = ["user", "profile_image", "phone_number"]
+
+
+class BookingSerializer(serializers.ModelSerializer):
+    trip = TripSerializer()
+    customer = CutomerProfileSerializer()
+
+    class Meta:
+        model = CustomerBooking
+        fields = "__all__"
