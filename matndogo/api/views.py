@@ -380,13 +380,14 @@ class ForgotPasswordView(APIView):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class Feedback(APIView):
+class FeedbackView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     def post(self, request):
-        if request.data.get("message"):
+        message = request.data.get("message")
+        if message:
             feedback = Feedback(user=request.user,
-                                message=request.data.get("message"))
+                                    message=message)
             feedback.save()
         return Response({"message": "Thank you for your feed back"}, status=201)
 

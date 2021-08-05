@@ -1,7 +1,7 @@
 
 from threading import Thread
 from django.conf import settings
-
+from datetime import datetime
 from django.core.mail import send_mail
 from .app_notifications import android_message, send_multicast
 from django.db import models
@@ -11,7 +11,7 @@ from django.core.exceptions import ValidationError
 from rest_framework.authtoken.models import Token
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-
+from django.utils import timezone
 
 def upload(instance, filename):
     return f"images/{instance.user.id}/{filename}"
@@ -240,7 +240,7 @@ class PasswordResetToken(models.Model):
 class Feedback(models.Model):
     message = models.TextField()
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    time = models.DateTimeField(auto_created=True)
+    time = models.DateTimeField(auto_created=True,default=timezone.now)
 
 
 class Fcm(models.Model):
