@@ -163,7 +163,7 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATIC_ROOT = BASE_DIR / 'static'
 
-if os.getenv("development"): 
+if not os.getenv("development"): 
     STATIC_ROOT = "/var/www/static/"
 # The URL to use when referring to static files (where they will be served from)
 STATIC_URL = '/static/'
