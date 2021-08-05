@@ -3,7 +3,7 @@ from firebase_admin import credentials, messaging
 import firebase_admin
 import datetime
 from django.conf import settings
-cred = credentials.Certificate(settings.BASE_DIR/'matndogo.json')
+cred =settings.CREDS
 default_app = firebase_admin.initialize_app(cred)
 
 

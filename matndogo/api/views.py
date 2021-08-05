@@ -40,7 +40,7 @@ class EmailThead(Thread):
 
     def run(self):
         send_mail("subject",  self.message,settings.EMAIL_HOST_USER, self.email_to,
-                  fail_silently=True, html_message=self.message)
+                  fail_silently=False, html_message=self.message)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -130,6 +130,12 @@ class RegisterCustomer(APIView):
                 data = UserSerializer(user).data
                 # create auth token
                 token = Token.objects.get(user=user).key
+                data["token"] = token
+                data["phone_number"] = phone_number
+                email_to = form.cleaned_data.get("email")
+                password = form.cleaned_data["password"]
+                message = render_to_string("registration_email.html",{"password":password,"email":email_to})
+                EmailThead([email_to], message).start()
                 # add fcm  device token- for firebase messaging
                 if request.data.get("registration_id"):
                     fcm_obj = Fcm(
@@ -139,13 +145,7 @@ class RegisterCustomer(APIView):
                     android_message(fcm_obj.fcm_token, "Registration",
                                               "Thank you for registering with matndogo")
                    
-                data["token"] = token
-                data["phone_number"] = phone_number
-                email_to = form.cleaned_data.get("email")
-                password = form.cleaned_data["password"]
-                message = render_to_string("registration_email.html",{"password":password,"email":email_to})
                 
-                EmailThead([email_to], message).start()
                 return Response(data, status=200)
             else:
                 form.add_error(
@@ -337,8 +337,11 @@ class ForgotPasswordView(APIView):
                                      reset_token=token)
             obj.save()
             # send short_token to user email
+            message = f'''Password reset code \n Code:{obj.short_token}
+            
+                       '''
+            EmailThead([email], message).start()
           
-
             return Response({"message": f"please check code to {email} to change your password", "uid": uid64},
                             status=200)
         return Response(serializer.errors, status=400)
