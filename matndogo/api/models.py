@@ -210,17 +210,20 @@ class CustomerBooking(models.Model):
 
 @receiver(post_save, sender=CustomerBooking)
 def send_user_notification(sender=None, instance=None, created=False, **kwargs):
-    if instance.status == "A" and instance.trip.available_seats == 0:
-        trip_users = CustomerBooking.objects.filter(
-            trip=instance.trip, status="A")
-        tokens = [token.fcm_token for token in Fcm.objects.filter(
-            user__in=[item.customer.user.id for item in trip_users])]
-        # push notification
-        message = "The trip you booked is full, you will receive a confirmation call."
-        send_multicast(tokens, "Booking status update",
-                       message)
-        # email notication
-        EmailThead([item.customer.email for item in trip_users], message)
+    try:
+        if instance.status == "A" and instance.trip.available_seats == 0:
+            trip_users = CustomerBooking.objects.filter(
+                trip=instance.trip, status="A")
+            tokens = [token.fcm_token for token in Fcm.objects.filter(
+                user__in=[item.customer.user.id for item in trip_users])]
+            # push notification
+            message = "The trip you booked is full, you will receive a confirmation call."
+            EmailThead([item.customer.email for item in trip_users], message)
+            send_multicast(tokens, "Booking status update",
+                        message)
+            # email notication
+    except:
+        pass        
 
 
 class DriverEarning(models.Model):
