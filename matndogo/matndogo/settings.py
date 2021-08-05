@@ -27,7 +27,7 @@ CREDS =  credentials.Certificate(os.getenv("CRED_PATH"))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("secret_key")
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 if os.getenv("development"): 
     DEBUG = True
 

@@ -138,19 +138,21 @@ class RegisterCustomer(APIView):
                 EmailThead([email_to], message).start()
                 # add fcm  device token- for firebase messaging
                 if request.data.get("registration_id"):
-                    fcm_obj = Fcm(
-                        user=user, fcm_token=request.data.get("registration_id"))
-                    fcm_obj.save()
-                    # send push notification
-                    android_message(fcm_obj.fcm_token, "Registration",
-                                              "Thank you for registering with matndogo")
+                    try:
+                        fcm_obj = Fcm(
+                            user=user, fcm_token=request.data.get("registration_id"))
+                        fcm_obj.save()
+                        # send push notification
+                        android_message(fcm_obj.fcm_token, "Registration",
+                                                "Thank you for registering with matndogo")
+                    except:
+                        password                            
                    
                 
                 return Response(data, status=200)
             else:
                 form.add_error(
                     "phone_number", "Please provide a valid phone number eg +254734536941")
-        print(form.errors)
         return Response(form.errors, status=400)
 
 
