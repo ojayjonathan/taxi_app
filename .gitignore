@@ -1,0 +1,11 @@
+_venv/
+matndogo/db.sqlite3
+**/matndogo/config.py
+__pycache__/
+images/
+db.sqlite3
+Procfile
+app.yaml
+.env
+matndogo.json
+api/migrations/
