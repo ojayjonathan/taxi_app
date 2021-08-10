@@ -42,7 +42,6 @@ class EmailThead(Thread):
         send_mail("subject",  self.message,settings.EMAIL_HOST_USER, self.email_to,
                   fail_silently=True, html_message=self.message)
 
-
 @method_decorator(csrf_exempt, name='dispatch')
 class UserLogin(APIView):
     """
