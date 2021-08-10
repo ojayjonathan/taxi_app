@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from .models import (Customer, User, Route, Trip, Feedback, Fcm,
+from .models import (Customer, User, Route, Trip, Fcm,
                      CustomerBooking, UserAddress, Address, City, Street, PasswordResetToken)
 from django.shortcuts import get_object_or_404, render
 from rest_framework.authtoken.models import Token
