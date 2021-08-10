@@ -237,10 +237,10 @@ class PasswordResetToken(models.Model):
     reset_token = models.CharField(max_length=100)
 
 
-# class Feedback(models.Model):
-#     message = models.TextField()
-#     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-#     created_on = models.DateTimeField(auto_created=True,default=timezone.now)
+class Feedback(models.Model):
+    message = models.TextField()
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    created_on = models.DateTimeField(auto_created=True,default=timezone.now)
 
 
 class Fcm(models.Model):

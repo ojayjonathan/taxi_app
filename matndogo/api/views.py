@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from .models import (Customer, User, Route, Trip, Fcm,
+from .models import (Customer, User, Route, Trip, Fcm,Feedback,
                      CustomerBooking, UserAddress, Address, City, Street, PasswordResetToken)
 from django.shortcuts import get_object_or_404, render
 from rest_framework.authtoken.models import Token
@@ -386,10 +386,9 @@ class FeedbackView(APIView):
     def post(self, request):
         message = request.data.get("message")
         if message:
-            pass
-            # feedback = Feedback(user=request.user,
-            #                         message=message)
-            # feedback.save()
+            feedback = Feedback(user=request.user,
+                                    message=message)
+            feedback.save()
         return Response({"message": "Thank you for your feed back"}, status=201)
 
 
