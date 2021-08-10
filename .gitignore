@@ -9,3 +9,6 @@ app.yaml
 .env
 matndogo.json
 api/migrations/
+matndogo/api/migrations
+matndogo/static/admin
+matndogo/static/rest_framework
