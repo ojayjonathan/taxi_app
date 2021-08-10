@@ -132,3 +132,13 @@ class DriverTripSchema(AutoSchema):
         #     ]
         manual_fields = super().get_manual_fields(path, method)
         return manual_fields + extra_fields
+class FeedbackSchema(AutoSchema):
+    def get_manual_fields(self, path, method):
+        extra_fields = []
+        if method.lower() == "post":
+            extra_fields = [
+                coreapi.Field("message", required=True, location="form"),
+            ]
+       
+        manual_fields = super().get_manual_fields(path, method)
+        return manual_fields + extra_fields        

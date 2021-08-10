@@ -240,7 +240,7 @@ class PasswordResetToken(models.Model):
 class Feedback(models.Model):
     message = models.TextField()
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    time = models.DateTimeField(auto_created=True,default=timezone.now)
+    created_on = models.DateTimeField(auto_created=True,default=timezone.now)
 
 
 class Fcm(models.Model):

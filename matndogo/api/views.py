@@ -382,6 +382,7 @@ class ForgotPasswordView(APIView):
 class FeedbackView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
+    schema = FeedbackSchema()
     def post(self, request):
         message = request.data.get("message")
         if message:
