@@ -386,9 +386,10 @@ class FeedbackView(APIView):
     def post(self, request):
         message = request.data.get("message")
         if message:
-            feedback = Feedback(user=request.user,
-                                    message=message)
-            feedback.save()
+            pass
+            # feedback = Feedback(user=request.user,
+            #                         message=message)
+            # feedback.save()
         return Response({"message": "Thank you for your feed back"}, status=201)
 
 
