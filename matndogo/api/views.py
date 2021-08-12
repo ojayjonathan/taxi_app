@@ -58,6 +58,10 @@ class UserLogin(APIView):
                 token = Token.objects.get(user=user).key
                 data = UserSerializer(user).data
                 data["token"] = token
+                if request.data.get("registration_id"):
+                        fcm_obj = Fcm.objects.get_or_create(user=user)
+                        fcm_obj.fcm_token=request.data.get("registration_id")
+                        fcm_obj.save()
                 return Response(data, status=200)
             return Response({"errors": ["please provide valid credentials"]},
                             status=400)
