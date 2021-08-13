@@ -59,7 +59,7 @@ class UserLogin(APIView):
                 data = UserSerializer(user).data
                 data["token"] = token
                 if request.data.get("registration_id"):
-                        fcm_obj = Fcm.objects.get_or_create(user=user)
+                        fcm_obj _= Fcm.objects.get_or_create(user=user)
                         fcm_obj.fcm_token=request.data.get("registration_id")
                         fcm_obj.save()
                 return Response(data, status=200)
