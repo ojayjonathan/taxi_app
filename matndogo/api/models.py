@@ -211,11 +211,6 @@ class CustomerBooking(models.Model):
 
 @receiver(post_save, sender=CustomerBooking)
 def send_user_notification(sender=None, instance=None, created=False, **kwargs):
-    if created:
-        message = f'''{instance.customer.user} has booked a trip from 
-                         {instance.trip.route.origin} to {instance.trip.route.destination}'''
-        EmailThead(["matndogo254@gmail.com"], message)
-        
     try:
         if instance.status == "A" and instance.trip.available_seats == 0:
             trip_users = CustomerBooking.objects.filter(

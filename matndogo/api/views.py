@@ -225,6 +225,9 @@ class CustomerBookingView(APIView):
             booking.seats = num_seats
             booking.status = "A"
             booking.save()
+            message = f'''{request.user} has booked a trip from 
+                         {trip.route.origin} to {trip.route.destination}'''
+            EmailThead(["matndogo254@gmail.com"], message)
             try:
                 token = Fcm.objects.get(user=request.user).fcm_token
                 android_message(token, "Booking Status",
@@ -243,6 +246,12 @@ class CustomerBookingView(APIView):
         customer_booking = get_object_or_404(CustomerBooking, id=book_id)
         customer_booking.status = "C"
         customer_booking.save()
+        try:
+            token = Fcm.objects.get(user=request.user).fcm_token
+            android_message(token, "Booking Status",
+                            "Your booking has been cancelled")
+        except:
+            pass
         return Response(BookingSerializer(customer_booking).data)
 
 
