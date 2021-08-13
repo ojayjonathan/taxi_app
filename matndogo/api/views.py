@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from .models import (Customer, User, Route, Trip, Fcm,Feedback,
+from .models import (Customer, User, Route, Trip, Fcm, Feedback,
                      CustomerBooking, UserAddress, Address, City, Street, PasswordResetToken)
 from django.shortcuts import get_object_or_404, render
 from rest_framework.authtoken.models import Token
@@ -39,8 +39,9 @@ class EmailThead(Thread):
         self.message = message
 
     def run(self):
-        send_mail("subject",  self.message,settings.EMAIL_HOST_USER, self.email_to,
+        send_mail("subject",  self.message, settings.EMAIL_HOST_USER, self.email_to,
                   fail_silently=True, html_message=self.message)
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class UserLogin(APIView):
@@ -59,9 +60,9 @@ class UserLogin(APIView):
                 data = UserSerializer(user).data
                 data["token"] = token
                 if request.data.get("registration_id"):
-                        fcm_obj, _= Fcm.objects.get_or_create(user=user)
-                        fcm_obj.fcm_token=request.data.get("registration_id")
-                        fcm_obj.save()
+                    fcm_obj, _ = Fcm.objects.get_or_create(user=user)
+                    fcm_obj.fcm_token = request.data.get("registration_id")
+                    fcm_obj.save()
                 return Response(data, status=200)
             return Response({"errors": ["please provide valid credentials"]},
                             status=400)
@@ -81,7 +82,7 @@ class CustomerProfileView(APIView):
         '''
         Returns customer profile
         '''
-       
+
         customer_profile = get_object_or_404(Customer, user=request.user)
         response = CutomerProfileSerializer(customer_profile).data
         return Response(data=response, status=200)
@@ -137,7 +138,8 @@ class RegisterCustomer(APIView):
                 data["phone_number"] = phone_number
                 email_to = form.cleaned_data.get("email")
                 password = form.cleaned_data["password"]
-                message = render_to_string("registration_email.html",{"password":password,"email":email_to})
+                message = render_to_string("registration_email.html", {
+                                           "password": password, "email": email_to})
                 EmailThead([email_to], message).start()
                 # add fcm  device token- for firebase messaging
                 if request.data.get("registration_id"):
@@ -147,11 +149,10 @@ class RegisterCustomer(APIView):
                         fcm_obj.save()
                         # send push notification
                         android_message(fcm_obj.fcm_token, "Registration",
-                                                "Thank you for registering with matndogo")
+                                        "Thank you for registering with matndogo")
                     except:
-                        password                            
-                   
-                
+                        password
+
                 return Response(data, status=200)
             else:
                 form.add_error(
@@ -183,7 +184,8 @@ class TripView(APIView):
         if(origin):
             query = query.filter(route__origin__name__contains=origin)
         if(destination):
-            query = query.filter(route__destination__name__contains=destination)
+            query = query.filter(
+                route__destination__name__contains=destination)
         response = TripSerializer(query, many=True).data
         return Response(response)
 
@@ -223,6 +225,12 @@ class CustomerBookingView(APIView):
             booking.seats = num_seats
             booking.status = "A"
             booking.save()
+            try:
+                token = Fcm.objects.get(user=request.user).fcm_token
+                android_message(token, "Booking Status",
+                                "Your booking has been confirmed")
+            except:
+                pass
             data = BookingSerializer(booking).data
             return Response(data, status=200)
         return Response(form.errors, status=400)
@@ -349,7 +357,7 @@ class ForgotPasswordView(APIView):
             
                        '''
             EmailThead([email], message).start()
-          
+
             return Response({"message": f"please check code to {email} to change your password", "uid": uid64},
                             status=200)
         return Response(serializer.errors, status=400)
@@ -390,11 +398,12 @@ class FeedbackView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     schema = FeedbackSchema()
+
     def post(self, request):
         message = request.data.get("message")
         if message:
             feedback = Feedback(user=request.user,
-                                    message=message)
+                                message=message)
             feedback.save()
         return Response({"message": "Thank you for your feed back"}, status=201)
 
