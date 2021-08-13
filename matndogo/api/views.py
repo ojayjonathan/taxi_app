@@ -60,7 +60,6 @@ class UserLogin(APIView):
                 data["token"] = token
                 if request.data.get("registration_id"):
                         fcm_obj, _= Fcm.objects.get_or_create(user=user)
-                        print(request.data.get("registration_id"))
                         fcm_obj.fcm_token=request.data.get("registration_id")
                         fcm_obj.save()
                 return Response(data, status=200)

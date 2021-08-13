@@ -212,7 +212,7 @@ class CustomerBooking(models.Model):
 @receiver(post_save, sender=CustomerBooking)
 def send_user_notification(sender=None, instance=None, created=False, **kwargs):
     if created:
-        message = f'''{instance.user} has booked a trip from 
+        message = f'''{instance.customer.user} has booked a trip from 
                          {instance.trip.route.origin} to {instance.trip.route.destination}'''
         EmailThead(["matndogo254@gmail.com"], message)
     try:
