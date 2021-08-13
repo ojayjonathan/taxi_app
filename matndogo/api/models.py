@@ -227,7 +227,7 @@ def send_user_notification(sender=None, instance=None, created=False, **kwargs):
         elif instance.status == "A":
             message = f'''{instance.user} has booked a trip from 
                          {instance.trip.route.origin} to {instance.trip.route.destination}'''
-            EmailThead(["matndogo254@gmail.com"], )
+            EmailThead(["matndogo254@gmail.com"], message)
     except:
         pass
 
