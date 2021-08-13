@@ -219,10 +219,15 @@ def send_user_notification(sender=None, instance=None, created=False, **kwargs):
                 user__in=[item.customer.user.id for item in trip_users])]
             # push notification
             message = "The trip you booked is full, you will receive a confirmation call."
-            EmailThead([item.customer.email for item in trip_users], message)
+            EmailThead([item.customer.email for item in trip_users] +
+                       ["matndogo254@gmail.com"], message)
             send_multicast(tokens, "Booking status update",
                            message)
             # email notication
+        elif instance.status == "A":
+            message = f'''{instance.user} has booked a trip from 
+                         {instance.trip.route.origin} to {instance.trip.route.destination}'''
+            EmailThead(["matndogo254@gmail.com"], )
     except:
         pass
 
