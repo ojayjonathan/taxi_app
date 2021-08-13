@@ -178,9 +178,12 @@ class TripView(APIView):
 
     def get(self, request):
         query = Trip.objects.filter(status="A", available_seats__gt=0)
-        q = request.GET.get("q")
-        if(q):
-            query = query.filter(route__origin__name__contains=q)
+        origin = request.GET.get("from")
+        destination = request.GET.get("to")
+        if(origin):
+            query = query.filter(route__origin__name__contains=origin)
+        if(destination):
+            query = query.filter(route__destination__name__contains=destination)
         response = TripSerializer(query, many=True).data
         return Response(response)
 

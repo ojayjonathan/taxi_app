@@ -1,9 +1,9 @@
 
+from django.core.validators import MinValueValidator
 from threading import Thread
 from django.conf import settings
-from datetime import datetime
 from django.core.mail import send_mail
-from .app_notifications import android_message, send_multicast
+from .app_notifications import send_multicast
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from .managers import UserManager
@@ -12,6 +12,7 @@ from rest_framework.authtoken.models import Token
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+
 
 def upload(instance, filename):
     return f"images/{instance.user.id}/{filename}"
@@ -118,7 +119,7 @@ class Trip(models.Model):
     route = models.ForeignKey(Route, on_delete=models.SET_NULL, null=True)
     departure = models.DateTimeField(null=True, blank=True)
     arrival = models.DateTimeField(null=True, blank=True)
-    available_seats = models.IntegerField()
+    available_seats = models.IntegerField(validators=[MinValueValidator(0)])
     status = models.CharField(max_length=1, choices=(
         ("C", "canceled"),  ("F", "fulfiled"), ("A", "active")
     ), default="A")
@@ -220,10 +221,10 @@ def send_user_notification(sender=None, instance=None, created=False, **kwargs):
             message = "The trip you booked is full, you will receive a confirmation call."
             EmailThead([item.customer.email for item in trip_users], message)
             send_multicast(tokens, "Booking status update",
-                        message)
+                           message)
             # email notication
     except:
-        pass        
+        pass
 
 
 class DriverEarning(models.Model):
@@ -240,7 +241,7 @@ class PasswordResetToken(models.Model):
 class Feedback(models.Model):
     message = models.TextField()
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    created_on = models.DateTimeField(auto_created=True,default=timezone.now)
+    created_on = models.DateTimeField(auto_created=True, default=timezone.now)
 
 
 class Fcm(models.Model):

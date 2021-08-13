@@ -19,6 +19,7 @@ from firebase_admin import credentials
 
 load_dotenv(BASE_DIR.parent/".env")
 load_dotenv(BASE_DIR.parent.parent/".env")
+
 CREDS =  credentials.Certificate(os.getenv("CRED_PATH"))
 
 # Quick-start development settings - unsuitable for production
