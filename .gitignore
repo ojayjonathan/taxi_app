@@ -12,3 +12,4 @@ api/migrations/
 matndogo/api/migrations
 matndogo/static/admin
 matndogo/static/rest_framework
+firebase_api_keys.json
