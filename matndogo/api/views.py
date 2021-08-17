@@ -167,7 +167,7 @@ class RouteView(APIView):
     '''
 
     def get(self, request):
-        query = Route.objects.all()
+        query = Route.objects.all().order_by('-available')
         return Response(RouteSerializer(query, many=True).data)
 
 
