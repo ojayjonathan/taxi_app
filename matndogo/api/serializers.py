@@ -44,7 +44,7 @@ class RouteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Route
-        fields = ["origin", "destination", "cost"]
+        fields = ["origin", "destination", "cost","available"]
 
 
 class DriverSerializer(serializers.ModelSerializer):

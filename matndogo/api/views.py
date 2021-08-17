@@ -228,7 +228,8 @@ class CustomerBookingView(APIView):
             message = f'''{request.user} has booked a trip from 
                          {trip.route.origin} to {trip.route.destination}'''
             EmailThead(["matndogo254@gmail.com"], message)
-            try:
+            try:   
+                # send customer push notification
                 token = Fcm.objects.get(user=request.user).fcm_token
                 android_message(token, "Booking Status",
                                 "Your booking has been confirmed")

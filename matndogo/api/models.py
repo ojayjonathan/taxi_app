@@ -36,7 +36,7 @@ class User(AbstractUser):
     REQUIRED_FIELDS = ["first_name", "last_name"]
     objects = UserManager()
 
-    def __str__(self) -> str:
+    def __str__(self):
         return f"{self.first_name} {self.last_name}"
 
 
@@ -56,7 +56,7 @@ class Customer(models.Model):
     profile_image = models.ImageField(null=True, blank=True, upload_to=upload)
     phone_number = models.CharField(max_length=13)
 
-    def __str__(self) -> str:
+    def __str__(self):
         return f"{self.user.first_name} {self.user.last_name}"
 
 
@@ -70,21 +70,21 @@ class Driver(models.Model):
     dl_number = models.CharField(max_length=10, unique=True)
     national_id_number = models.CharField(max_length=8, unique=True)
 
-    def __str__(self) -> str:
+    def __str__(self):
         return f"{self.user.first_name} {self.user.last_name}"
 
 
 class City(models.Model):
     name = models.CharField(max_length=30, unique=True)
 
-    def __str__(self) -> str:
+    def __str__(self):
         return self.name
 
 
 class Street(models.Model):
     name = models.CharField(max_length=50, unique=True)
 
-    def __str__(self) -> str:
+    def __str__(self):
         return self.name
 
 
@@ -94,11 +94,12 @@ class Route(models.Model):
     destination = models.ForeignKey(
         City, on_delete=models.CASCADE, related_name="to")
     cost = models.IntegerField()
+    available = models.BooleanField(default=True)
 
     class Meta:
         unique_together = (("origin", "destination"),)
 
-    def __str__(self) -> str:
+    def __str__(self):
         return f"{self.origin} - {self.destination}"
 
 
@@ -109,7 +110,7 @@ class Vehicle(models.Model):
         help_text="available number of seats for passangers")
     vehicle_registration_number = models.CharField(max_length=20, unique=True)
 
-    def __str__(self) -> str:
+    def __str__(self):
         return f"{self.vehicle_registration_number} - {self.seats} seats"
 
 
@@ -124,7 +125,7 @@ class Trip(models.Model):
         ("C", "canceled"),  ("F", "fulfiled"), ("A", "active")
     ), default="A")
 
-    def __str__(self) -> str:
+    def __str__(self):
         return f"{self.route.origin} - {self.route.destination} trip"
 
 
@@ -136,7 +137,7 @@ class Address(models.Model):
     class Meta:
         db_table = "addresses"
 
-    def __str__(self) -> str:
+    def __str__(self):
         return f"{self.zip_code} {self.street} {self.city}, Kenya"
 
 
@@ -149,7 +150,7 @@ class UserAddress(models.Model):
         unique_together = (("user", "address"),)
         db_table = "user_addresses"
 
-    def __str__(self) -> str:
+    def __str__(self):
         return f"{self.user} - {self.address}"
 
 
@@ -170,13 +171,13 @@ class CustomerBooking(models.Model):
     class Meta:
         unique_together = (("trip", "customer"))
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, **kwargs):
         # __initial_booked_seats set number of seats before making update
         super(CustomerBooking, self).__init__(*args, **kwargs)
         if self.seats:
             self.__initial_booked_seats = self.seats
 
-    def __str__(self) -> str:
+    def __str__(self):
         return f"{self.trip} - {self.customer.user}"
 
     def clean(self):
@@ -212,18 +213,30 @@ class CustomerBooking(models.Model):
 @receiver(post_save, sender=CustomerBooking)
 def send_user_notification(sender=None, instance=None, created=False, **kwargs):
     try:
-        if instance.status == "A" and instance.trip.available_seats == 0:
+        status = instance.status
+        # send admin and driver push notification
+        if status == "A" or status == "C":
+            superusers = User.objects.filter(is_superuser=True)
+            tokens = [token.fcm_token for token in Fcm.objects.filter(
+                user__in=[user.id for user in superusers]+[instance.trip.driver.user.id])]
+            label_ = {"A": "Booked", "C": "Canceled"}[status]
+            message = f"{instance.customer} has {label_} a trip \n trip:{instance.trip}"
+            send_multicast(tokens, "Booking status update",
+                           message)
+            EmailThead([user.email for user in superusers] +
+                       ["matndogo254@gmail.com"], message)
+        if status == "A" and instance.trip.available_seats == 0:
             trip_users = CustomerBooking.objects.filter(
                 trip=instance.trip, status="A")
             tokens = [token.fcm_token for token in Fcm.objects.filter(
                 user__in=[item.customer.user.id for item in trip_users])]
             # push notification
             message = "The trip you booked is full, you will receive a confirmation call."
-            EmailThead([item.customer.email for item in trip_users] +
-                       ["matndogo254@gmail.com"], message)
             send_multicast(tokens, "Booking status update",
                            message)
             # email notication
+            EmailThead([item.customer.email for item in trip_users] +
+                       ["matndogo254@gmail.com"], message)
 
     except:
         pass
